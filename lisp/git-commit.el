@@ -678,7 +678,34 @@ Added to `font-lock-extend-region-functions'."
               (2 'git-commit-overlong-summary t t)
               (3 'git-commit-nonempty-second-line t t)))))
 
-(defvar git-commit-font-lock-keywords git-commit-font-lock-keywords-1
+(defconst git-commit-font-lock-keywords-2
+  `(,@git-commit-font-lock-keywords-1
+    (eval
+     . `(,(format "^%s\t\\(?:\\([^:\n]+\\):\\s-+\\)?\\(.*\\)"
+                  comment-start)
+         (1 'git-commit-comment-action t t)
+         (2 'git-commit-comment-file t)))
+    (eval
+     . `(,(format
+           "^%s Your branch \\(?:is up-to-date with\\|and\\) '\\([^']*\\)'"
+           comment-start)
+         (2 'git-commit-comment-branch t)))
+    (eval
+     . `(,(format
+           "^%s Your branch \\(?:is ahead of\\|is behind of\\) '\\([^']*\\)'"
+           comment-start)
+         (2 'git-commit-comment-branch t)))))
+
+(defconst git-commit-font-lock-keywords-3
+  `(,@git-commit-font-lock-keywords-2
+    (eval
+     . `(,(format
+           "^%s Your branch \\(?:is ahead of\\|is behind of\\) '[^']*' by \\([0-9]*\\)"
+           comment-start)
+         (1 'git-commit-comment-branch t)
+         (2 'bold t)))))
+
+(defvar git-commit-font-lock-keywords git-commit-font-lock-keywords-2
   "Font-Lock keywords for Git-Commit mode.")
 
 (defun git-commit-setup-font-lock ()
