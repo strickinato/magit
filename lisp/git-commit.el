@@ -429,28 +429,6 @@ already using it, then you probably shouldn't start doing so."
   (run-hooks 'git-commit-setup-hook)
   (set-buffer-modified-p nil))
 
-(defun git-commit-setup-font-lock ()
-  (let ((table (make-syntax-table (syntax-table))))
-    (when comment-start
-      (modify-syntax-entry (string-to-char comment-start) "." table))
-    (modify-syntax-entry ?#  "." table)
-    (modify-syntax-entry ?\" "." table)
-    (modify-syntax-entry ?\' "." table)
-    (modify-syntax-entry ?`  "." table)
-    (set-syntax-table table))
-  (setq-local comment-start
-              (or (ignore-errors
-                    (car (process-lines "git" "config" "core.commentchar")))
-                  "#"))
-  (setq-local comment-start-skip (format "^%s+[\s\t]*" comment-start))
-  (setq-local comment-end-skip "\n")
-  (setq-local comment-use-syntax nil)
-  (setq-local font-lock-multiline t)
-  (add-hook 'font-lock-extend-region-functions
-            #'git-commit-extend-region-summary-line
-            t t)
-  (font-lock-add-keywords nil (git-commit-mode-font-lock-keywords) t))
-
 (define-minor-mode git-commit-mode
   "Auxiliary minor mode used when editing Git commit messages.
 This mode is only responsible for setting up some key bindings.
@@ -671,37 +649,59 @@ Added to `font-lock-extend-region-functions'."
             (setq font-lock-beg (min font-lock-beg summary-beg)
                   font-lock-end (max font-lock-end summary-end))))))))
 
-(defun git-commit-mode-font-lock-keywords ()
-  `(;; Comments
-    (,(format "^%s.*" comment-start)
-     (0 'font-lock-comment-face))
-    (,(format "^%s On branch \\(.*\\)" comment-start)
-     (1 'git-commit-comment-branch t))
-    (,(format "^%s Not currently on any branch." comment-start)
-     (1 'git-commit-comment-detached t))
-    (,(format "^%s %s" comment-start
-              (regexp-opt git-commit-comment-headings t))
-     (1 'git-commit-comment-heading t))
-    (,(format "^%s\t\\(?:\\([^:\n]+\\):\\s-+\\)?\\(.*\\)" comment-start)
-     (1 'git-commit-comment-action t t)
-     (2 'git-commit-comment-file t))
+(defconst git-commit-font-lock-keywords-1
+  '(;; Comments
+    (eval . `(,(format "^%s.*" comment-start)
+              (0 'font-lock-comment-face)))
+    (eval . `(,(format "^%s On branch \\(.*\\)" comment-start)
+              (1 'git-commit-comment-branch t)))
+    (eval . `(,(format "^%s Not currently on any branch." comment-start)
+              (1 'git-commit-comment-detached t)))
+    (eval . `(,(format "^%s %s" comment-start
+                       (regexp-opt git-commit-comment-headings t))
+              (1 'git-commit-comment-heading t)))
     ;; Pseudo headers
-    (,(format "^\\(%s:\\)\\( .*\\)"
-              (regexp-opt git-commit-known-pseudo-headers))
-     (1 'git-commit-known-pseudo-header)
-     (2 'git-commit-pseudo-header))
+    (eval . `(,(format "^\\(%s:\\)\\( .*\\)"
+                       (regexp-opt git-commit-known-pseudo-headers))
+              (1 'git-commit-known-pseudo-header)
+              (2 'git-commit-pseudo-header)))
     ("^[-a-zA-Z]+: [^<]+? <[^>]+>"
      (0 'git-commit-pseudo-header))
     ;; Summary
-    (,(git-commit-summary-regexp)
-     (1 'git-commit-summary t))
+    (eval . `(,(git-commit-summary-regexp)
+              (1 'git-commit-summary t)))
     ;; - Note (overrides summary)
     ("\\[.+?\\]"
      (0 'git-commit-note t))
     ;; - Non-empty second line (overrides summary and note)
-    (,(git-commit-summary-regexp)
-     (2 'git-commit-overlong-summary t t)
-     (3 'git-commit-nonempty-second-line t t))))
+    (eval . `(,(git-commit-summary-regexp)
+              (2 'git-commit-overlong-summary t t)
+              (3 'git-commit-nonempty-second-line t t)))))
+
+(defvar git-commit-font-lock-keywords git-commit-font-lock-keywords-1
+  "Font-Lock keywords for Git-Commit mode.")
+
+(defun git-commit-setup-font-lock ()
+  (let ((table (make-syntax-table (syntax-table))))
+    (when comment-start
+      (modify-syntax-entry (string-to-char comment-start) "." table))
+    (modify-syntax-entry ?#  "." table)
+    (modify-syntax-entry ?\" "." table)
+    (modify-syntax-entry ?\' "." table)
+    (modify-syntax-entry ?`  "." table)
+    (set-syntax-table table))
+  (setq-local comment-start
+              (or (ignore-errors
+                    (car (process-lines "git" "config" "core.commentchar")))
+                  "#"))
+  (setq-local comment-start-skip (format "^%s+[\s\t]*" comment-start))
+  (setq-local comment-end-skip "\n")
+  (setq-local comment-use-syntax nil)
+  (setq-local font-lock-multiline t)
+  (add-hook 'font-lock-extend-region-functions
+            #'git-commit-extend-region-summary-line
+            t t)
+  (font-lock-add-keywords nil git-commit-font-lock-keywords t))
 
 (defun git-commit-propertize-diff ()
   (save-excursion
