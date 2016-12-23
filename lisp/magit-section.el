@@ -295,6 +295,69 @@ With a prefix argument also expand it." heading)
                   (recenter 0)))
        (message ,(format "Section \"%s\" wasn't found" heading)))))
 
+;;;; Region
+
+(defun magit-turn-on-shift-select-mode-p ()
+  (and ;; TODO (magit-diff-inside-hunk-body-p)
+       shift-select-mode
+       this-command-keys-shift-translated
+       (not mark-active)
+       (not (eq (car-safe transient-mark-mode) 'only))))
+
+(defun magit-previous-line (&optional arg try-vscroll)
+  "Like `previous-line' but with Magit-specific shift-selection.
+
+Magit's selection mechanism is based on the region but selects an
+area that is larger than the region.  This causes `previous-line'
+when invoked while holding the shift key to move up one line and
+thereby selects two lines.  This command on the other hand does
+not move point on the first invocation and thereby only selects
+a single line.  Which inconsistency you prefer is a matter of
+preference.
+
+Note that Magit does not support one-section selections yet.  So
+the behavior of this command, for the time being, only differs
+from `previous-line' when invoked inside a hunk body, but not on
+section headings.  This however is expected to change.
+
+To use this command and `magit-next-line' add this to you
+init file:
+  (define-key magit-mode-map [remap previous-line] 'magit-previous-line)
+  (define-key magit-mode-map [remap next-line] 'magit-next-line)"
+  (declare (interactive-only forward-line))
+  (interactive "p\np")
+  (if (magit-turn-on-shift-select-mode-p)
+      (push-mark-command t)
+    (with-no-warnings
+      (previous-line arg try-vscroll))))
+
+(defun magit-next-line (&optional arg try-vscroll)
+  "Like `next-line' but with Magit-specific shift-selection.
+
+Magit's selection mechanism is based on the region but selects an
+area that is larger than the region.  This causes `next-line'
+when invoked while holding the shift key to move up one line and
+thereby selects two lines.  This command on the other hand does
+not move point on the first invocation and thereby only selects
+a single line.  Which inconsistency you prefer is a matter of
+preference.
+
+Note that Magit does not support one-section selections yet.  So
+the behavior of this command, for the time being, only differs
+from `next-line' when invoked inside a hunk body, but not on
+section headings.  This however is expected to change.
+
+To use this command and `magit-previous-line' add this to you
+init file:
+  (define-key magit-mode-map [remap previous-line] 'magit-previous-line)
+  (define-key magit-mode-map [remap next-line] 'magit-next-line)"
+  (declare (interactive-only forward-line))
+  (interactive "p\np")
+  (if (magit-turn-on-shift-select-mode-p)
+      (push-mark-command t)
+    (with-no-warnings
+      (next-line arg try-vscroll))))
+
 ;;;; Visibility
 
 (defun magit-section-show (section)
