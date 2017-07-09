@@ -12,7 +12,7 @@ all: lisp
 git-commit.elc:
 magit-popup.elc:
 magit-utils.elc:
-magit-section.elc:	magit-utils.elc
+magit-section.elc:
 magit-git.elc:		magit-utils.elc magit-section.elc
 magit-mode.elc:		magit-section.elc magit-git.elc magit-popup.elc
 magit-margin.elc:	magit-section.elc magit-mode.elc

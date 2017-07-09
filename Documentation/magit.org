@@ -5748,12 +5748,18 @@ abstractions to extend Magit itself or implement a separate extension.
 A few of the low-level features used by Magit have been factored out
 into separate libraries/packages, so that they can be used by other
 packages, without having to depend on Magit.  These libraries are
-described in separate manuals, see [[info:with-editor]] and
-[[info:magit-popup]].
+described in separate manuals: ~with-editor~[fn:info-with-editor],
+~magit-popup~[fn:info-magit-popup], and
+~magit-section~[fn:info-magit-section].
 
 If you are trying to find an unused key that you can bound to a
-command provided by your own Magit extension, then checkout
-https://github.com/magit/magit/wiki/Plugin-Dispatch-Key-Registry.
+command provided by your own Magit extension, then checkout the
+"Plugin Dispatch Key Registry"[fn:key-registry].
+
+[fn:info-with-editor] [[info:with-editor]]
+[fn:info-magit-popup] [[info:magit-popup]]
+[fn:info-magit-section] [[info:magit-section]]
+[fn:key-registry] https://github.com/magit/magit/wiki/Plugin-Dispatch-Key-Registry
 
 ** Calling Git
 *** _ :ignore:
@@ -6011,201 +6017,7 @@ And now for the asynchronous variants.
   When this is non-nil, then ~magit-process-sentinel~ raises an error if
   git exits with a non-zero exit status.  For debugging purposes.
 
-** Section Plumbing
-*** Creating Sections
-
-- Macro: magit-insert-section &rest args
-
-  Insert a section at point.
-
-  TYPE is the section type, a symbol.  Many commands that act on the
-  current section behave differently depending on that type.  Also if
-  a variable ~magit-TYPE-section-map~ exists, then use that as the
-  text-property ~keymap~ of all text belonging to the section (but this
-  may be overwritten in subsections).  TYPE can also have the form
-  ~(eval FORM)~ in which case FORM is evaluated at runtime.
-
-  Optional VALUE is the value of the section, usually a string that is
-  required when acting on the section.
-
-  When optional HIDE is non-nil collapse the section body by default,
-  i.e. when first creating the section, but not when refreshing the
-  buffer.  Otherwise, expand it by default.  This can be overwritten using
-  ~magit-section-set-visibility-hook~.  When a section is recreated
-  during a refresh, then the visibility of predecessor is inherited
-  and HIDE is ignored (but the hook is still honored).
-
-  BODY is any number of forms that actually insert the section's
-  heading and body.  Optional NAME, if specified, has to be a symbol,
-  which is then bound to the struct of the section being inserted.
-
-  Before BODY is evaluated the ~start~ of the section object is set to
-  the value of ~point~ and after BODY was evaluated its ~end~ is set to
-  the new value of ~point~; BODY is responsible for moving ~point~
-  forward.
-
-  If it turns out inside BODY that the section is empty, then
-  ~magit-cancel-section~ can be used to abort and remove all traces of
-  the partially inserted section.  This can happen when creating a
-  section by washing Git's output and Git didn't actually output
-  anything this time around.
-
-- Function: magit-insert-heading &rest args
-
-  Insert the heading for the section currently being inserted.
-
-  This function should only be used inside ~magit-insert-section~.
-
-  When called without any arguments, then just set the ~content~ slot of
-  the object representing the section being inserted to a marker at
-  ~point~.  The section should only contain a single line when this
-  function is used like this.
-
-  When called with arguments ARGS, which have to be strings, then
-  insert those strings at point.  The section should not contain any
-  text before this happens and afterwards it should again only contain
-  a single line.  If the ~face~ property is set anywhere inside any of
-  these strings, then insert all of them unchanged.  Otherwise use the
-  ~magit-section-heading~ face for all inserted text.
-
-  The ~content~ property of the section struct is the end of the heading
-  (which lasts from ~start~ to ~content~) and the beginning of the body
-  (which lasts from ~content~ to ~end~).  If the value of ~content~ is nil,
-  then the section has no heading and its body cannot be collapsed.
-  If a section does have a heading then its height must be exactly one
-  line, including a trailing newline character.  This isn't enforced;
-  you are responsible for getting it right.  The only exception is
-  that this function does insert a newline character if necessary.
-
-- Function: magit-cancel-section
-
-  Cancel the section currently being inserted.  This exits the
-  innermost call to ~magit-insert-section~ and removes all traces of
-  what has already happened inside that call.
-
-- Function: magit-define-section-jumper sym title &optional value
-
-  Define an interactive function to go to section SYM.  TITLE is the
-  displayed title of the section.
-
-*** Section Selection
-
-- Function: magit-current-section
-
-  Return the section at point.
-
-- Function: magit-region-sections
-
-  Return a list of the selected sections.
-
-  When the region is active and constitutes a valid section selection,
-  then return a list of all selected sections.  This is the case when
-  the region begins in the heading of a section and ends in the
-  heading of a sibling of that first section.  When the selection is
-  not valid then return nil.  Most commands that can act on the
-  selected sections, then instead just act on the current section, the
-  one point is in.
-
-  When the region looks like it would in any other buffer then the
-  selection is invalid.  When the selection is valid then the region
-  uses the ~magit-section-highlight~.  This does not apply to diffs where
-  things get a bit more complicated, but even here if the region looks
-  like it usually does, then that's not a valid selection as far as
-  this function is concerned.
-
-- Function: magit-region-values &rest types
-
-  Return a list of the values of the selected sections.
-
-  Also see ~magit-region-sections~ whose doc-string explains when a
-  region is a valid section selection.  If the region is not active
-  or is not a valid section selection, then return nil.  If optional
-  TYPES is non-nil then the selection not only has to be valid; the
-  types of all selected sections additionally have to match one of
-  TYPES, or nil is returned.
-
-*** Matching Sections
-
-- Key: M-x magit-describe-section, magit-describe-section
-
-  Show information about the section at point.  This command is
-  intended for debugging purposes.
-
-- Function: magit-section-ident
-
-  Return an unique identifier for SECTION.  The return value has the
-  form ~((TYPE . VALUE)...)~.
-
-- Function: magit-get-section
-
-  Return the section identified by IDENT.  IDENT has to be a list as
-  returned by ~magit-section-ident~.
-
-- Function: magit-section-match condition &optional section
-
-  Return ~t~ if SECTION matches CONDITION.  SECTION defaults to the
-  section at point.  If SECTION is not specified and there also is no
-  section at point, then return ~nil~.
-
-  CONDITION can take the following forms:
-  - ~(CONDITION...)~
-
-    matches if any of the CONDITIONs matches.
-
-  - ~[TYPE...]~
-
-    matches if the first TYPE matches the type of the section, the
-    second matches that of its parent, and so on.
-
-  - ~[* TYPE...]~
-
-    matches sections that match [TYPE...] and also recursively all
-    their child sections.
-
-  - ~TYPE~
-
-    matches sections of TYPE regardless of the types of the parent
-    sections.
-
-  Each TYPE is a symbol.  Note that it is not necessary to specify all
-  TYPEs up to the root section as printed by ~magit-describe-type~,
-  unless of course you want to be that precise.
-
-- Function: magit-section-when condition &rest body
-
-  If the section at point matches CONDITION evaluate BODY.
-
-  If the section matches, then evaluate BODY forms sequentially with
-  ~it~ bound to the section and return the value of the last form.  If
-  there are no BODY forms, then return the value of the section.  If
-  the section does not match or if there is no section at point then
-  return nil.
-
-  See ~magit-section-match~ for the forms CONDITION can take.
-
-- Function: magit-section-case &rest clauses
-
-  Choose among clauses on the type of the section at point.
-
-  Each clause looks like (CONDITION BODY...).  The type of the
-  section is compared against each CONDITION; the BODY forms of the
-  first match are evaluated sequentially and the value of the last
-  form is returned.  Inside BODY the symbol ~it~ is bound to the
-  section at point.  If no clause succeeds or if there is no
-  section at point return nil.
-
-  See ~magit-section-match~ for the forms CONDITION can take.
-  Additionally a CONDITION of t is allowed in the final clause and
-  matches if no other CONDITION match, even if there is no section at
-  point.
-
-- Variable: magit-root-section
-
-  The root section in the current buffer.  All other sections are
-  descendants of this section.  The value of this variable is set by
-  ~magit-insert-section~ and you should never modify it.
-
-For diff related sections a few additional tools exist.
+** Diff Plumbing
 
 - Function: magit-diff-type &optional section
 

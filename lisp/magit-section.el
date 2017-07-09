@@ -1,12 +1,10 @@
-;;; magit-section.el --- section functionality  -*- lexical-binding: t -*-
+;;; magit-section.el --- TODO  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2010-2017  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; For a list of all contributors see http://magit.vc/authors.
 
 ;; Magit is free software; you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
@@ -27,12 +25,12 @@
 ;; If you have used Magit before, then you probably know what that
 ;; means, otherwise think "read-only Org-Mode for Git", kinda.
 
+;; TODO
+
 ;;; Code:
 
 (require 'cl-lib)
 (require 'dash)
-
-(require 'magit-utils)
 
 (declare-function magit-maybe-make-margin-overlay 'magit-log)
 (defvar magit-keep-region-overlay)
@@ -47,7 +45,7 @@
 (defcustom magit-section-show-child-count t
   "Whether to append the number of children to section headings.
 This only applies to sections for which doing so makes sense."
-  :package-version '(magit . "2.1.0")
+  :package-version '(magit-section . "2.1.0")
   :group 'magit-section
   :type 'boolean)
 
@@ -57,7 +55,7 @@ This only applies to sections for which doing so makes sense."
     magit-log-maybe-show-more-commits)
   "Hook run by `magit-section-goto'.
 That function in turn is used by all section movement commands."
-  :package-version '(magit . "2.3.0")
+  :package-version '(magit-section . "2.3.0")
   :group 'magit-section
   :type 'hook
   :options '(magit-hunk-set-window-start
@@ -74,7 +72,7 @@ That function in turn is used by all section movement commands."
   "Functions used to highlight the current section.
 Each function is run with the current section as only argument
 until one of them returns non-nil."
-  :package-version '(magit . "2.1.0")
+  :package-version '(magit-section . "2.1.0")
   :group 'magit-section
   :type 'hook
   :options '(magit-diff-highlight
@@ -88,7 +86,7 @@ Each function is run with the current section as only argument
 until one of them returns non-nil.  Most sections are properly
 unhighlighted without requiring a specialized unhighlighter,
 diff-related sections being the only exception."
-  :package-version '(magit . "2.1.0")
+  :package-version '(magit-section . "2.1.0")
   :group 'magit-section
   :type 'hook
   :options '(magit-diff-unhighlight))
@@ -101,7 +99,7 @@ Stop at the first function that returns non-nil.  The value
 should be `show' or `hide'.  If no function returns non-nil,
 determine the visibility as usual, i.e. use the hardcoded
 section specific default (see `magit-insert-section')."
-  :package-version '(magit . "2.4.0")
+  :package-version '(magit-section . "2.4.0")
   :group 'magit-section
   :type 'hook
   :options '(magit-diff-expansion-threshold
